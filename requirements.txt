@@ -3,4 +3,3 @@ uvicorn
 streamlit
 gtts
 faster-whisper
-xmlrpc
