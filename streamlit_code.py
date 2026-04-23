@@ -5,7 +5,7 @@ from gtts import gTTS
 import io
 
 # ---------------- CONFIG ----------------
-N8N_WEBHOOK_URL = "YOUR_N8N_WEBHOOK_URL"  # 🔥 replace this
+N8N_WEBHOOK_URL = "https://yashwanthrt1.app.n8n.cloud/webhook/smart_voice_agent"  # 🔥 replace this
 
 st.set_page_config(page_title="Smart Voice ERP Assistant")
 
