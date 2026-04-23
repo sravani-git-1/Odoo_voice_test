@@ -1,0 +1,8 @@
+[2026-04-23 14:32:43]
+User: Hi.
+AI: Hello! How can I assist you today?
+----------------------------------------
+[2026-04-23 14:33:04]
+User: Get all customers.
+AI: Please specify the system or database you're using to retrieve the customers.
+----------------------------------------
