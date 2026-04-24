@@ -8,7 +8,7 @@ from datetime import datetime
 # ==============================
 # 🔧 CONFIG
 # ==============================
-N8N_WEBHOOK_URL = "https://yashwanthrt1.app.n8n.cloud/webhook/smart_voice_agent"
+N8N_WEBHOOK_URL = "https://yashwanthrt1.app.n8n.cloud/webhook-test/smart_voice_agent"
 
 # ==============================
 # 🎤 LOAD WHISPER MODEL
