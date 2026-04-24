@@ -7,78 +7,77 @@ app = FastAPI()
 odoo = OdooService()
 
 
-# ---------- EXISTING MODELS ----------
-class PartnerCreate(BaseModel):
-    name: str
-    phone: Optional[str] = None
-    type: str  # customer / vendor
-
-
-class PartnerUpdate(BaseModel):
-    id: int
-    name: Optional[str] = None
-    phone: Optional[str] = None
-
-
-# ---------- EXISTING APIs ----------
-@app.post("/partner/create")
-def create_partner(data: PartnerCreate):
-    is_vendor = data.type.lower() == "vendor"
-    pid = odoo.create_partner(data.name, data.phone, is_vendor)
-    return {"message": f"Created with ID {pid}"}
-
-
-@app.get("/partner/read")
-def read_partner(type: str):
-    is_vendor = type.lower() == "vendor"
-    return odoo.get_partners(is_vendor)
-
-
-@app.put("/partner/update")
-def update_partner(data: PartnerUpdate):
-    odoo.update_partner(data.id, data.name, data.phone)
-    return {"message": "Updated"}
-
-
-@app.delete("/partner/delete/{partner_id}")
-def delete_partner(partner_id: int):
-    odoo.delete_partner(partner_id)
-    return {"message": "Deleted"}
-
-
-# ---------- AI AGENT MODEL ----------
-class AgentRequest(BaseModel):
-    action: str
-    type: Optional[str] = None
+# ---------- UNIFIED MODEL ----------
+class PartnerRequest(BaseModel):
+    action: str                 # create / read / update / delete
+    type: Optional[str] = None  # customer / vendor
     data: Optional[Dict] = {}
     filters: Optional[Dict] = {}
     update_fields: Optional[Dict] = {}
     confirm: Optional[bool] = False
 
 
-# ---------- AI AGENT ENDPOINT ----------
-@app.post("/agent")
-def handle_agent(request: AgentRequest):
+# ---------- SINGLE API ----------
+@app.post("/partner")
+def handle_partner(request: PartnerRequest):
     try:
         action = request.action.lower()
+        partner_type = request.type.lower() if request.type else None
 
+        # ---------- CREATE ----------
         if action == "create":
-            return odoo.create_partner_dynamic(request.type, request.data)
+            pid = odoo.create_partner_dynamic(partner_type, request.data)
+            return {
+                "status": "success",
+                "message": f"{partner_type} created",
+                "id": pid
+            }
 
+        # ---------- READ ----------
         elif action == "read":
-            return odoo.get_partner_dynamic(request.type, request.filters)
+            result = odoo.get_partner_dynamic(partner_type, request.filters)
 
+            if not result:
+                return {
+                    "status": "success",
+                    "message": f"No {partner_type}s found",
+                    "data": []
+                }
+
+            return {
+                "status": "success",
+                "count": len(result),
+                "data": result
+            }
+
+        # ---------- UPDATE ----------
         elif action == "update":
-            return odoo.update_partner_dynamic(
+            res = odoo.update_partner_dynamic(
                 request.filters,
                 request.update_fields
             )
 
+            return {
+                "status": "success",
+                "message": "Updated successfully",
+                "result": res
+            }
+
+        # ---------- DELETE ----------
         elif action == "delete":
             if not request.confirm:
-                return {"message": "Delete not confirmed"}
+                return {
+                    "status": "warning",
+                    "message": "Delete not confirmed"
+                }
 
-            return odoo.delete_partner_dynamic(request.filters)
+            res = odoo.delete_partner_dynamic(request.filters)
+
+            return {
+                "status": "success",
+                "message": "Deleted successfully",
+                "result": res
+            }
 
         else:
             raise HTTPException(status_code=400, detail="Invalid action")
