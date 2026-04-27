@@ -7,17 +7,15 @@ app = FastAPI()
 odoo = OdooService()
 
 
-# ---------- UNIFIED MODEL ----------
 class PartnerRequest(BaseModel):
-    action: str                 # create / read / update / delete
-    type: Optional[str] = None  # customer / vendor
+    action: str
+    type: Optional[str] = None
     data: Optional[Dict] = {}
     filters: Optional[Dict] = {}
     update_fields: Optional[Dict] = {}
     confirm: Optional[bool] = False
 
 
-# ---------- SINGLE API ----------
 @app.post("/partner")
 def handle_partner(request: PartnerRequest):
     try:
@@ -26,10 +24,23 @@ def handle_partner(request: PartnerRequest):
 
         # ---------- CREATE ----------
         if action == "create":
+            if not request.data:
+                raise HTTPException(status_code=400, detail="Missing data")
+
+            if "name" not in request.data:
+                raise HTTPException(status_code=400, detail="Field 'name' is required")
+
             pid = odoo.create_partner_dynamic(partner_type, request.data)
+
+            if not pid:
+                return {
+                    "status": "error",
+                    "message": "Create failed"
+                }
+
             return {
                 "status": "success",
-                "message": f"{partner_type} created",
+                "message": f"{partner_type} created successfully",
                 "id": pid
             }
 
@@ -52,15 +63,24 @@ def handle_partner(request: PartnerRequest):
 
         # ---------- UPDATE ----------
         elif action == "update":
+            if not request.filters or not request.update_fields:
+                raise HTTPException(status_code=400, detail="Missing filters or update_fields")
+
             res = odoo.update_partner_dynamic(
+                partner_type,
                 request.filters,
                 request.update_fields
             )
 
+            if not res:
+                return {
+                    "status": "error",
+                    "message": "Update failed or record not found"
+                }
+
             return {
                 "status": "success",
-                "message": "Updated successfully",
-                "result": res
+                "message": "Updated successfully"
             }
 
         # ---------- DELETE ----------
@@ -71,12 +91,23 @@ def handle_partner(request: PartnerRequest):
                     "message": "Delete not confirmed"
                 }
 
-            res = odoo.delete_partner_dynamic(request.filters)
+            if not request.filters:
+                raise HTTPException(status_code=400, detail="Missing filters")
+
+            res = odoo.delete_partner_dynamic(
+                partner_type,
+                request.filters
+            )
+
+            if not res:
+                return {
+                    "status": "error",
+                    "message": "Delete failed or record not found"
+                }
 
             return {
                 "status": "success",
-                "message": "Deleted successfully",
-                "result": res
+                "message": "Deleted successfully"
             }
 
         else:
